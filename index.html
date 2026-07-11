@@ -392,22 +392,42 @@
             };
             log('Payload: ' + JSON.stringify(payload).substring(0, 100));
 
+            trySendData(payload);
+        }
+
+        function trySendData(payload, isRetry) {
+            log((isRetry ? 'Retry' : 'First') + ' sendData attempt...');
             try {
                 if (tg) {
-                    log('Calling tg.sendData()...');
                     tg.sendData(JSON.stringify(payload));
-                    log('tg.sendData() called successfully (app should close)');
+                    log('sendData succeeded');
                 } else {
-                    showError('Telegram WebApp не найден. Откройте тест через бота.');
+                    showSendError(payload, 'Telegram WebApp не найден');
                 }
             } catch (e) {
-                log('sendData EXCEPTION: ' + e.message);
-                console.error('sendData error:', e);
-                el.loader.style.display = 'none';
-                el.grid.style.display = '';
-                el.instruction.innerText = 'Произошла ошибка. Попробуйте ещё раз.';
-                showError('Ошибка: ' + e.message);
+                log('sendData failed: ' + e.message);
+                showSendError(payload, e.message);
             }
+        }
+
+        function showSendError(payload, errorMsg) {
+            el.loader.style.display = 'none';
+            el.grid.style.display = '';
+            el.instruction.innerText = 'Ошибка отправки. Нажмите "Повторить" или отправьте код боту.';
+
+            var jsonStr = JSON.stringify(payload);
+
+            var errDiv = document.createElement('div');
+            errDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid #ff3333;padding:16px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.5);';
+
+            errDiv.innerHTML = '<div style="color:#ff3333;font-size:13px;margin-bottom:8px;">Ошибка: ' + errorMsg + '</div>' +
+                '<button onclick="trySendData(' + JSON.stringify(payload).replace(/"/g, "'") + ',true)" style="background:var(--primary);color:#fff;border:none;padding:10px 0;width:100%;border-radius:10px;font-size:15px;font-weight:600;margin-bottom:8px;cursor:pointer;">Повторить</button>' +
+                '<details style="margin-top:8px;"><summary style="color:var(--muted);font-size:12px;cursor:pointer;">Или отправьте код боту</summary>' +
+                '<textarea style="width:100%;height:60px;margin-top:6px;padding:6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:monospace;" readonly>' + jsonStr + '</textarea>' +
+                '<div style="color:var(--muted);font-size:11px;margin-top:4px;">Скопируйте этот код и отправьте боту</div></details>';
+
+            el.grid.parentNode.appendChild(errDiv);
+            showError('Ошибка: ' + errorMsg);
         }
 
         init();
