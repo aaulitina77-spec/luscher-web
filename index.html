@@ -246,8 +246,6 @@
         </div>
     </div>
 
-    <div id="status-log" style="display:none;position:fixed;top:60px;left:10px;right:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:8px;border-radius:8px;font-size:11px;font-family:monospace;z-index:300;max-height:200px;overflow:auto;"></div>
-
     <!-- Верхняя панель -->
     <header class="top-bar">
         <div class="status-text" id="instruction">Выберите самый приятный цвет</div>
@@ -271,12 +269,7 @@
     </div>
 
     <script>
-        // --- Логи ---
-        function log(msg) {
-            var el = document.getElementById('status-log');
-            if (el) { el.style.display = 'block'; el.innerHTML += '<div>' + msg + '</div>'; }
-            console.log('[Luscher]', msg);
-        }
+        function log(msg) { console.log('[Luscher]', msg); }
         log('App loaded');
 
         // --- Сброс состояния ---
@@ -412,6 +405,9 @@
                     log('openTelegramLink error: ' + e.message);
                     window.location.href = url;
                 }
+                setTimeout(function() {
+                    try { tg.close(); } catch(e) { log('close error: ' + e.message); }
+                }, 300);
             };
 
             var container = document.querySelector('.main-container');
