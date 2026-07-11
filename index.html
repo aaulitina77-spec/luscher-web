@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <title>Lüscher Test</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            /* Терапевтическая темная тема (Calm Dark) */
+            --bg: #0f1115;
+            --surface: #181a20;
+            --primary: #5b8bf7;
+            --text: #e1e3e6;
+            --muted: #8b92a0;
+            --border: rgba(255, 255, 255, 0.08);
+            --radius: 16px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Скрываем скролл, всё влезает в экран */
+        }
+
+        /* --- Header & Top Info --- */
+        .top-bar {
+            padding: 16px 20px;
+            text-align: center;
+            background: rgba(15, 17, 21, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .progress-track {
+            height: 4px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* --- Main Grid --- */
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 16px;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            max-height: 60vh;
+            margin: auto;
+            transition: opacity 0.3s;
+        }
+
+        @media (max-width: 500px) {
+            .color-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+                gap: 12px;
+                max-height: 75vh;
+            }
+        }
+
+        /* --- Tiles (UI Design) --- */
+        .tile {
+            border-radius: var(--radius);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Эффект нажатия */
+        .tile:active {
+            transform: scale(0.95);
+        }
+
+        /* Состояние "Выбрано" */
+        .tile.picked {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+        }
+
+        .tile-icon {
+            font-size: 24px;
+            opacity: 0;
+            /* Скрыто, пока не наведено или для декора */
+            transition: opacity 0.2s;
+        }
+
+        /* --- Modal (Rules) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 340px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.hidden .modal-card {
+            transform: translateY(20px);
+        }
+
+        h2 {
+            margin: 0 0 12px;
+            font-size: 20px;
+            color: var(--text);
+        }
+
+        p {
+            margin: 0 0 20px;
+            font-size: 15px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 14px 0;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(91, 139, 247, 0.3);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- Loading/Processing State --- */
+        .loader {
+            display: none;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Всплывающее окно с правилами -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-card">
+            <h2>🧠 Цветовой тест</h2>
+            <p>
+                Мы проанализируем ваше состояние и сгенерируем <b>терапевтическую сказку</b> специально для вас.
+                <br><br>
+                1. Выбирайте цвета <b>от самых приятных к наименее приятным</b>. Ориентируйтесь на ощущение прямо
+                сейчас.
+                <br>
+                2. Тест состоит из <b>двух одинаковых кругов</b>. Второй круг нужен для проверки искренности выбора и
+                максимальной точности результата.
+            </p>
+            <button class="btn" onclick="closeModal()">Начать</button>
+        </div>
+    </div>
+
+    <!-- Верхняя панель -->
+    <header class="top-bar">
+        <div class="status-text" id="instruction">Выберите самый приятный цвет</div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+    </header>
+
+    <!-- Основная сетка цветов -->
+    <div class="main-container">
+        <div class="color-grid" id="grid">
+            <!-- Плитки генерируются JS -->
+        </div>
+
+        <!-- Спиннер загрузки (появляется в конце) -->
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <div style="color: var(--muted); font-size: 14px;">Анализируем психотип...<br>Генерируем вашу сказку</div>
+        </div>
+        <div class="error-box" id="error-box" style="display:none;position:fixed;bottom:20px;left:20px;right:20px;background:#ff3333;color:white;padding:12px 16px;border-radius:12px;font-size:14px;text-align:center;z-index:200;"></div>
+    </div>
+
+    <script>
+        // --- Сброс состояния при загрузке из кеша ---
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                location.reload();
+            }
+        });
+        (function resetPage() {
+            const g = document.getElementById('grid');
+            if (g) g.style.display = '';
+            const l = document.getElementById('loader');
+            if (l) l.style.display = 'none';
+            const eb = document.getElementById('error-box');
+            if (eb) eb.style.display = 'none';
+            const inst = document.getElementById('instruction');
+            if (inst) inst.innerText = 'Выберите самый приятный цвет';
+            const prog = document.getElementById('progress');
+            if (prog) prog.style.width = '0%';
+            const modal = document.getElementById('modal');
+            if (modal) modal.classList.remove('hidden');
+        })();
+
+        // --- Telegram WebApp ---
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            document.documentElement.style.setProperty('--bg', tg.themeParams.bg_color || '#0f1115');
+        }
+
+        // --- Данные (Стандартные цвета Люшера) ---
+        const COLORS = [
+            { id: 0, hex: '#787878', name: 'Grey' },
+            { id: 1, hex: '#004c99', name: 'Blue' },
+            { id: 2, hex: '#008f39', name: 'Green' },
+            { id: 3, hex: '#ff3333', name: 'Red' },
+            { id: 4, hex: '#ffcc00', name: 'Yellow' },
+            { id: 5, hex: '#993399', name: 'Violet' },
+            { id: 6, hex: '#8b4513', name: 'Brown' },
+            { id: 7, hex: '#1a1a1a', name: 'Black' }
+        ];
+
+        let phase = 1;
+        let picks = { round1: [], round2: [] };
+
+        const el = {
+            modal: document.getElementById('modal'),
+            grid: document.getElementById('grid'),
+            instruction: document.getElementById('instruction'),
+            progress: document.getElementById('progress'),
+            loader: document.getElementById('loader'),
+            errorBox: document.getElementById('error-box')
+        };
+
+        function showError(msg) {
+            if (el.errorBox) {
+                el.errorBox.textContent = msg;
+                el.errorBox.style.display = 'block';
+                setTimeout(function () {
+                    el.errorBox.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function init() {
+            renderGrid();
+        }
+
+        window.closeModal = function () {
+            el.modal.classList.add('hidden');
+        };
+
+        function renderGrid() {
+            el.grid.innerHTML = '';
+            COLORS.forEach(function (color) {
+                var tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.style.backgroundColor = color.hex;
+                tile.dataset.id = color.id;
+                tile.onclick = function () { handlePick(color.id, tile); };
+                el.grid.appendChild(tile);
+            });
+        }
+
+        function handlePick(id, tileElement) {
+            var currentRound = phase === 1 ? picks.round1 : picks.round2;
+            if (currentRound.includes(id)) return;
+            currentRound.push(id);
+            tileElement.classList.add('picked');
+
+            var totalPicks = picks.round1.length + picks.round2.length;
+            var progressPercent = (totalPicks / 16) * 100;
+            el.progress.style.width = progressPercent + '%';
+
+            if (currentRound.length === 8) {
+                if (phase === 1) {
+                    startRoundTwo();
+                } else {
+                    finishTest();
+                }
+            }
+        }
+
+        function startRoundTwo() {
+            phase = 2;
+            setTimeout(function () {
+                var tiles = document.querySelectorAll('.tile');
+                tiles.forEach(function (t) { t.classList.remove('picked'); });
+                el.instruction.style.opacity = 0;
+                setTimeout(function () {
+                    el.instruction.innerText = 'Второй круг: выберите цвета заново. Не пытайтесь вспомнить прошлый выбор.';
+                    el.instruction.style.opacity = 1;
+                }, 300);
+            }, 400);
+        }
+
+        function finishTest() {
+            el.grid.style.display = 'none';
+            el.instruction.innerText = 'Обработка...';
+            el.loader.style.display = 'block';
+
+            var payload = {
+                type: 'luscher_full',
+                timestamp: Date.now(),
+                pick1: picks.round1,
+                pick2: picks.round2
+            };
+
+            setTimeout(function () {
+                try {
+                    if (tg) {
+                        tg.sendData(JSON.stringify(payload));
+                    } else {
+                        showError('Telegram WebApp не найден. Откройте тест через бота.');
+                    }
+                } catch (e) {
+                    console.error('sendData error:', e);
+                    el.loader.style.display = 'none';
+                    el.grid.style.display = '';
+                    el.instruction.innerText = 'Произошла ошибка. Попробуйте ещё раз.';
+                    showError('Ошибка отправки. Попробуйте ещё раз через бота.');
+                }
+            }, 1000);
+        }
+
+        init();
+
+    </script>
+</body>
+
+</html>
