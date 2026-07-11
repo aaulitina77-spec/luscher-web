@@ -395,40 +395,85 @@
             trySendData(payload);
         }
 
-        function trySendData(payload, isRetry) {
-            log((isRetry ? 'Retry' : 'First') + ' sendData attempt...');
+        function trySendData(payload, attempt) {
+            attempt = attempt || 1;
+            log('sendData attempt ' + attempt);
             try {
                 if (tg) {
                     tg.sendData(JSON.stringify(payload));
                     log('sendData succeeded');
                 } else {
-                    showSendError(payload, 'Telegram WebApp не найден');
+                    showSendError(payload, 'Telegram WebApp не найден', attempt);
                 }
             } catch (e) {
                 log('sendData failed: ' + e.message);
-                showSendError(payload, e.message);
+                if (attempt < 3) {
+                    setTimeout(function() { trySendData(payload, attempt + 1); }, 500);
+                } else {
+                    showSendError(payload, e.message, attempt);
+                }
             }
         }
 
-        function showSendError(payload, errorMsg) {
+        function showSendError(payload, errorMsg, attempt) {
             el.loader.style.display = 'none';
             el.grid.style.display = '';
-            el.instruction.innerText = 'Ошибка отправки. Нажмите "Повторить" или отправьте код боту.';
+            el.instruction.innerText = 'Не удалось отправить данные. Скопируйте код и отправьте боту.';
 
             var jsonStr = JSON.stringify(payload);
+            window._luscherPayload = payload;
+            window._luscherJson = jsonStr;
 
-            var errDiv = document.createElement('div');
-            errDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid #ff3333;padding:16px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.5);';
+            var old = document.getElementById('sendErrorPanel');
+            if (old) old.parentNode.removeChild(old);
 
-            errDiv.innerHTML = '<div style="color:#ff3333;font-size:13px;margin-bottom:8px;">Ошибка: ' + errorMsg + '</div>' +
-                '<button onclick="trySendData(' + JSON.stringify(payload).replace(/"/g, "'") + ',true)" style="background:var(--primary);color:#fff;border:none;padding:10px 0;width:100%;border-radius:10px;font-size:15px;font-weight:600;margin-bottom:8px;cursor:pointer;">Повторить</button>' +
-                '<details style="margin-top:8px;"><summary style="color:var(--muted);font-size:12px;cursor:pointer;">Или отправьте код боту</summary>' +
-                '<textarea style="width:100%;height:60px;margin-top:6px;padding:6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:monospace;" readonly>' + jsonStr + '</textarea>' +
-                '<div style="color:var(--muted);font-size:11px;margin-top:4px;">Скопируйте этот код и отправьте боту</div></details>';
+            var panel = document.createElement('div');
+            panel.id = 'sendErrorPanel';
+            panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid #ff3333;padding:16px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.5);';
 
-            el.grid.parentNode.appendChild(errDiv);
+            panel.innerHTML = '<div style="color:#ff3333;font-size:12px;margin-bottom:8px;">Попыток: ' + attempt + ' | ' + errorMsg + '</div>' +
+                '<button onclick="window._retrySend()" style="background:var(--primary);color:#fff;border:none;padding:10px 0;width:100%;border-radius:10px;font-size:15px;font-weight:600;margin-bottom:8px;cursor:pointer;">Повторить</button>' +
+                '<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:6px;">— или —</div>' +
+                '<button onclick="window._copyCode()" style="background:#2a2d35;color:var(--text);border:none;padding:10px 0;width:100%;border-radius:10px;font-size:14px;cursor:pointer;">📋 Скопировать код</button>' +
+                '<div id="copyMsg" style="color:var(--muted);font-size:11px;text-align:center;margin-top:6px;">Нажмите, затем вставьте в чат с ботом</div>';
+
+            var container = el.grid.parentNode;
+            container.appendChild(panel);
             showError('Ошибка: ' + errorMsg);
         }
+
+        window._retrySend = function() {
+            trySendData(window._luscherPayload, 1);
+        };
+
+        window._copyCode = function() {
+            var str = window._luscherJson || '';
+            var done = false;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(str).then(function() {
+                    done = true;
+                    var msg = document.getElementById('copyMsg');
+                    if (msg) msg.innerText = '✅ Скопировано! Вставьте в чат с ботом.';
+                }).catch(function() { done = false; });
+            }
+            setTimeout(function() {
+                if (!done) {
+                    try {
+                        var ta = document.createElement('textarea');
+                        ta.value = str;
+                        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        var msg = document.getElementById('copyMsg');
+                        if (msg) msg.innerText = '✅ Скопировано! Вставьте в чат с ботом.';
+                    } catch(e) {
+                        prompt('Копировать вручную (Ctrl+C):', str);
+                    }
+                }
+            }, 100);
+        };
 
         init();
 
