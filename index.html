@@ -378,131 +378,47 @@
             }, 400);
         }
 
-        function finishTest() {
-            log('finishTest() called');
-            el.grid.style.display = 'none';
-            el.instruction.innerText = 'Обработка...';
-            el.loader.style.display = 'block';
-
-            var payload = {
-                type: 'luscher_full',
-                timestamp: Date.now(),
-                pick1: picks.round1,
-                pick2: picks.round2
-            };
-            log('Payload: ' + JSON.stringify(payload).substring(0, 100));
-
-            trySendData(payload);
-        }
-
-        function trySendData(payload, attempt) {
-            attempt = attempt || 1;
-            log('sendData attempt ' + attempt);
-            try {
-                if (tg) {
-                    tg.sendData(JSON.stringify(payload));
-                    log('sendData succeeded');
-                } else {
-                    showSendError(payload, 'Telegram WebApp не найден', attempt);
-                }
-            } catch (e) {
-                log('sendData failed: ' + e.message);
-                if (attempt < 3) {
-                    setTimeout(function() { trySendData(payload, attempt + 1); }, 500);
-                } else {
-                    showSendError(payload, e.message, attempt);
-                }
-            }
-        }
-
         BOT_USERNAME = 'Lush123Bot';
 
         function encodePicks(p1, p2) {
             return 'test_' + p1.join('') + '_' + p2.join('');
         }
 
-        function showSendError(payload, errorMsg, attempt) {
+        function finishTest() {
+            log('finishTest() called');
+            el.grid.style.display = 'none';
             el.loader.style.display = 'none';
-            el.grid.style.display = '';
-            el.instruction.innerText = 'Не удалось отправить данные. Скопируйте код или нажмите "Отправить через Telegram".';
 
-            var jsonStr = JSON.stringify(payload);
-            window._luscherPayload = payload;
-            window._luscherJson = jsonStr;
-
-            var picksCode = encodePicks(payload.pick1, payload.pick2);
-            var telegramUrl = 'https://t.me/' + BOT_USERNAME + '?start=' + picksCode;
-
-            var old = document.getElementById('sendErrorPanel');
-            if (old) old.parentNode.removeChild(old);
-
-            var panel = document.createElement('div');
-            panel.id = 'sendErrorPanel';
-            panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid #ff3333;padding:16px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.5);';
-
-            panel.innerHTML = '<div style="color:#ff3333;font-size:12px;margin-bottom:8px;">Попыток: ' + attempt + ' | ' + errorMsg + '</div>' +
-                '<button onclick="window._retrySend()" style="background:var(--primary);color:#fff;border:none;padding:10px 0;width:100%;border-radius:10px;font-size:15px;font-weight:600;margin-bottom:8px;cursor:pointer;">Повторить</button>' +
-                '<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:6px;">— или —</div>' +
-                '<button onclick="window._sendViaTelegram()" style="background:#2a6b3c;color:#fff;border:none;padding:10px 0;width:100%;border-radius:10px;font-size:14px;cursor:pointer;">✈️ Отправить через Telegram</button>' +
-                '<div style="font-size:12px;color:var(--muted);text-align:center;margin:6px 0;">— или —</div>' +
-                '<button onclick="window._copyCode()" style="background:#2a2d35;color:var(--text);border:none;padding:10px 0;width:100%;border-radius:10px;font-size:14px;cursor:pointer;">📋 Скопировать код</button>' +
-                '<div id="copyMsg" style="color:var(--muted);font-size:11px;text-align:center;margin-top:6px;">Нажмите, затем вставьте в чат с ботом</div>';
-
-            var container = el.grid.parentNode;
-            container.appendChild(panel);
-            showError('Ошибка: ' + errorMsg);
-        }
-
-        window._retrySend = function() {
-            trySendData(window._luscherPayload, 1);
-        };
-
-        window._sendViaTelegram = function() {
-            var p = window._luscherPayload;
-            if (!p) return;
-            var code = encodePicks(p.pick1, p.pick2);
+            var code = encodePicks(picks.round1, picks.round2);
             var url = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
-            log('Opening Telegram link: ' + url);
-            try {
-                if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(url);
-                } else {
+            log('Result URL: ' + url);
+
+            el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
+                'Нажмите кнопку ниже, чтобы получить вашу персональную сказку.';
+            el.instruction.style.fontSize = '16px';
+
+            var btn = document.createElement('button');
+            btn.textContent = '✨ Получить мою сказку';
+            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;';
+            btn.onclick = function() {
+                log('Opening Telegram link');
+                try {
+                    if (tg && tg.openTelegramLink) {
+                        tg.openTelegramLink(url);
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch(e) {
+                    log('openTelegramLink error: ' + e.message);
                     window.location.href = url;
                 }
-            } catch(e) {
-                log('openTelegramLink error: ' + e.message);
-                window.location.href = url;
-            }
-        };
+            };
 
-        window._copyCode = function() {
-            var str = window._luscherJson || '';
-            var done = false;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(str).then(function() {
-                    done = true;
-                    var msg = document.getElementById('copyMsg');
-                    if (msg) msg.innerText = '✅ Скопировано! Вставьте в чат с ботом.';
-                }).catch(function() { done = false; });
-            }
-            setTimeout(function() {
-                if (!done) {
-                    try {
-                        var ta = document.createElement('textarea');
-                        ta.value = str;
-                        ta.style.position = 'fixed'; ta.style.left = '-9999px';
-                        document.body.appendChild(ta);
-                        ta.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(ta);
-                        var msg = document.getElementById('copyMsg');
-                        if (msg) msg.innerText = '✅ Скопировано! Вставьте в чат с ботом.';
-                    } catch(e) {
-                        prompt('Копировать вручную (Ctrl+C):', str);
-                    }
-                }
-            }, 100);
-        };
+            var container = document.querySelector('.main-container');
+            container.appendChild(btn);
+
+            log('Ready for user to click');
+        }
 
         init();
 
