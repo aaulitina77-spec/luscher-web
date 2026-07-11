@@ -246,6 +246,8 @@
         </div>
     </div>
 
+    <div id="status-log" style="display:none;position:fixed;top:60px;left:10px;right:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:8px;border-radius:8px;font-size:11px;font-family:monospace;z-index:300;max-height:200px;overflow:auto;"></div>
+
     <!-- Верхняя панель -->
     <header class="top-bar">
         <div class="status-text" id="instruction">Выберите самый приятный цвет</div>
@@ -269,37 +271,39 @@
     </div>
 
     <script>
-        // --- Сброс состояния при загрузке из кеша ---
+        // --- Логи ---
+        function log(msg) {
+            var el = document.getElementById('status-log');
+            if (el) { el.style.display = 'block'; el.innerHTML += '<div>' + msg + '</div>'; }
+            console.log('[Luscher]', msg);
+        }
+        log('App loaded');
+
+        // --- Сброс состояния ---
         window.addEventListener('pageshow', function (e) {
-            if (e.persisted) {
-                location.reload();
-            }
+            if (e.persisted) { log('pageshow persisted, reloading'); location.reload(); }
         });
         (function resetPage() {
-            const g = document.getElementById('grid');
-            if (g) g.style.display = '';
-            const l = document.getElementById('loader');
-            if (l) l.style.display = 'none';
-            const eb = document.getElementById('error-box');
-            if (eb) eb.style.display = 'none';
-            const inst = document.getElementById('instruction');
-            if (inst) inst.innerText = 'Выберите самый приятный цвет';
-            const prog = document.getElementById('progress');
-            if (prog) prog.style.width = '0%';
-            const modal = document.getElementById('modal');
-            if (modal) modal.classList.remove('hidden');
+            var g = document.getElementById('grid'); if (g) g.style.display = '';
+            var l = document.getElementById('loader'); if (l) l.style.display = 'none';
+            var eb = document.getElementById('error-box'); if (eb) eb.style.display = 'none';
+            var inst = document.getElementById('instruction'); if (inst) inst.innerText = 'Выберите самый приятный цвет';
+            var prog = document.getElementById('progress'); if (prog) prog.style.width = '0%';
+            var modal = document.getElementById('modal'); if (modal) modal.classList.remove('hidden');
         })();
 
         // --- Telegram WebApp ---
-        const tg = window.Telegram?.WebApp;
+        var tg = window.Telegram?.WebApp;
+        log('tg available: ' + (tg ? 'yes' : 'NO'));
         if (tg) {
             tg.ready();
             tg.expand();
             document.documentElement.style.setProperty('--bg', tg.themeParams.bg_color || '#0f1115');
+            log('tg.ready() called');
         }
 
-        // --- Данные (Стандартные цвета Люшера) ---
-        const COLORS = [
+        // --- Данные ---
+        var COLORS = [
             { id: 0, hex: '#787878', name: 'Grey' },
             { id: 1, hex: '#004c99', name: 'Blue' },
             { id: 2, hex: '#008f39', name: 'Green' },
@@ -310,10 +314,10 @@
             { id: 7, hex: '#1a1a1a', name: 'Black' }
         ];
 
-        let phase = 1;
-        let picks = { round1: [], round2: [] };
+        var phase = 1;
+        var picks = { round1: [], round2: [] };
 
-        const el = {
+        var el = {
             modal: document.getElementById('modal'),
             grid: document.getElementById('grid'),
             instruction: document.getElementById('instruction'),
@@ -323,22 +327,16 @@
         };
 
         function showError(msg) {
+            log('ERROR: ' + msg);
             if (el.errorBox) {
-                el.errorBox.textContent = msg;
+                el.errorBox.innerHTML = '<b>' + msg + '</b>';
                 el.errorBox.style.display = 'block';
-                setTimeout(function () {
-                    el.errorBox.style.display = 'none';
-                }, 5000);
             }
         }
 
-        function init() {
-            renderGrid();
-        }
+        function init() { renderGrid(); log('Grid rendered'); }
 
-        window.closeModal = function () {
-            el.modal.classList.add('hidden');
-        };
+        window.closeModal = function () { el.modal.classList.add('hidden'); log('Modal closed'); };
 
         function renderGrid() {
             el.grid.innerHTML = '';
@@ -363,16 +361,12 @@
             el.progress.style.width = progressPercent + '%';
 
             if (currentRound.length === 8) {
-                if (phase === 1) {
-                    startRoundTwo();
-                } else {
-                    finishTest();
-                }
+                if (phase === 1) { startRoundTwo(); } else { finishTest(); }
             }
         }
 
         function startRoundTwo() {
-            phase = 2;
+            phase = 2; log('Round 2 started');
             setTimeout(function () {
                 var tiles = document.querySelectorAll('.tile');
                 tiles.forEach(function (t) { t.classList.remove('picked'); });
@@ -385,6 +379,7 @@
         }
 
         function finishTest() {
+            log('finishTest() called');
             el.grid.style.display = 'none';
             el.instruction.innerText = 'Обработка...';
             el.loader.style.display = 'block';
@@ -395,22 +390,24 @@
                 pick1: picks.round1,
                 pick2: picks.round2
             };
+            log('Payload: ' + JSON.stringify(payload).substring(0, 100));
 
-            setTimeout(function () {
-                try {
-                    if (tg) {
-                        tg.sendData(JSON.stringify(payload));
-                    } else {
-                        showError('Telegram WebApp не найден. Откройте тест через бота.');
-                    }
-                } catch (e) {
-                    console.error('sendData error:', e);
-                    el.loader.style.display = 'none';
-                    el.grid.style.display = '';
-                    el.instruction.innerText = 'Произошла ошибка. Попробуйте ещё раз.';
-                    showError('Ошибка отправки. Попробуйте ещё раз через бота.');
+            try {
+                if (tg) {
+                    log('Calling tg.sendData()...');
+                    tg.sendData(JSON.stringify(payload));
+                    log('tg.sendData() called successfully (app should close)');
+                } else {
+                    showError('Telegram WebApp не найден. Откройте тест через бота.');
                 }
-            }, 1000);
+            } catch (e) {
+                log('sendData EXCEPTION: ' + e.message);
+                console.error('sendData error:', e);
+                el.loader.style.display = 'none';
+                el.grid.style.display = '';
+                el.instruction.innerText = 'Произошла ошибка. Попробуйте ещё раз.';
+                showError('Ошибка: ' + e.message);
+            }
         }
 
         init();
