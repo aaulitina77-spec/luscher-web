@@ -383,24 +383,24 @@
             el.loader.style.display = 'none';
 
             var code = encodePicks(picks.round1, picks.round2);
-            var url = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
-            log('Result URL: ' + url);
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Нажмите кнопку ниже, чтобы получить вашу персональную сказку.';
-            el.instruction.style.fontSize = '16px';
+                'Скопируйте код ниже и отправьте его боту <b>@Lush123Bot</b> в личные сообщения, чтобы получить вашу персональную сказку.';
+            el.instruction.style.fontSize = '15px';
 
-            var btn = document.createElement('a');
-            btn.href = url;
-            btn.target = '_blank';
-            btn.rel = 'noopener';
-            btn.textContent = '✨ Получить мою сказку';
-            btn.style.cssText = 'display:block;background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;text-decoration:none;';
+            var codeBox = document.createElement('div');
+            codeBox.textContent = code;
+            codeBox.style.cssText = 'background:var(--bg);border:2px dashed var(--primary);border-radius:var(--radius);padding:16px;margin:16px 0;font-size:18px;font-weight:bold;text-align:center;color:var(--primary);letter-spacing:2px;word-break:break-all;-webkit-user-select:all;user-select:all;';
+
+            var hint = document.createElement('div');
+            hint.style.cssText = 'font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;';
+            hint.innerHTML = 'Нажмите на код, чтобы выделить → скопируйте → вставьте в чат с ботом';
 
             var container = document.querySelector('.main-container');
-            container.appendChild(btn);
+            container.appendChild(hint);
+            container.appendChild(codeBox);
 
-            log('Ready for user to click');
+            log('Code: ' + code);
         }
 
         init();
