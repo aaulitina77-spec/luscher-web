@@ -400,6 +400,9 @@
                 } else {
                     window.location.href = url;
                 }
+                setTimeout(function() {
+                    try { tg.close(); } catch(e) { /* ignore */ }
+                }, 500);
             };
 
             var container = document.querySelector('.main-container');
