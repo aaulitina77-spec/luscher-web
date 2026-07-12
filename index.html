@@ -382,25 +382,24 @@
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            var code = encodePicks(picks.round1, picks.round2);
+            var payload = JSON.stringify({ pick1: picks.round1, pick2: picks.round2 });
+            log('Sending data via sendData');
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Скопируйте код ниже и отправьте его боту <b>@Lush123Bot</b> в личные сообщения, чтобы получить вашу персональную сказку.';
-            el.instruction.style.fontSize = '15px';
+                'Отправляю данные боту...';
+            el.instruction.style.fontSize = '16px';
 
-            var codeBox = document.createElement('div');
-            codeBox.textContent = code;
-            codeBox.style.cssText = 'background:var(--bg);border:2px dashed var(--primary);border-radius:var(--radius);padding:16px;margin:16px 0;font-size:18px;font-weight:bold;text-align:center;color:var(--primary);letter-spacing:2px;word-break:break-all;-webkit-user-select:all;user-select:all;';
+            if (tg) {
+                tg.sendData(payload);
+            } else {
+                window.location.href = 'https://t.me/' + BOT_USERNAME + '?start=' + encodePicks(picks.round1, picks.round2);
+            }
 
-            var hint = document.createElement('div');
-            hint.style.cssText = 'font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;';
-            hint.innerHTML = 'Нажмите на код, чтобы выделить → скопируйте → вставьте в чат с ботом';
+            setTimeout(function () {
+                try { tg.close(); } catch(e) { /* ignore */ }
+            }, 500);
 
-            var container = document.querySelector('.main-container');
-            container.appendChild(hint);
-            container.appendChild(codeBox);
-
-            log('Code: ' + code);
+            log('sendData called');
         }
 
         init();
