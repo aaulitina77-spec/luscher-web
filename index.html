@@ -382,33 +382,20 @@
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            var code = encodePicks(picks.round1, picks.round2);
-            var url = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
-            log('URL: ' + url);
+            var payload = JSON.stringify({ pick1: picks.round1, pick2: picks.round2 });
+            log('Sending via sendData');
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Нажмите кнопку, чтобы получить сказку:';
+                'Отправляю данные...';
             el.instruction.style.fontSize = '16px';
 
-            var btn = document.createElement('button');
-            btn.textContent = '✨ Получить мою сказку';
-            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
-            btn.onclick = function() {
-                log('openLink clicked');
-                if (tg && tg.openLink) {
-                    tg.openLink(url);
-                } else {
-                    window.location.href = url;
-                }
-                setTimeout(function() {
-                    try { tg.close(); } catch(e) { /* ignore */ }
-                }, 500);
-            };
+            if (tg) {
+                tg.sendData(payload);
+            }
 
-            var container = document.querySelector('.main-container');
-            container.appendChild(btn);
-
-            log('Ready for user click');
+            setTimeout(function() {
+                try { tg.close(); } catch(e) { /* ignore */ }
+            }, 300);
         }
 
         init();
