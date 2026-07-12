@@ -382,31 +382,30 @@
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            var payload = JSON.stringify({ pick1: picks.round1, pick2: picks.round2 });
             var code = encodePicks(picks.round1, picks.round2);
-            var fallbackUrl = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
+            var url = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
+            log('URL: ' + url);
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Отправляю данные боту...';
+                'Нажмите кнопку, чтобы получить сказку:';
             el.instruction.style.fontSize = '16px';
 
-            if (tg) {
-                tg.sendData(payload);
-                log('sendData called');
-                setTimeout(function () {
-                    var btn = document.createElement('a');
-                    btn.href = fallbackUrl;
-                    btn.textContent = '✨ Получить мою сказку';
-                    btn.style.cssText = 'display:block;background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;text-decoration:none;';
-                    var container = document.querySelector('.main-container');
-                    container.appendChild(btn);
-                    el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                        'Если бот не ответил, нажмите кнопку ниже:';
-                    log('Showing fallback button');
-                }, 2000);
-            } else {
-                window.location.href = fallbackUrl;
-            }
+            var btn = document.createElement('button');
+            btn.textContent = '✨ Получить мою сказку';
+            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
+            btn.onclick = function() {
+                log('openLink clicked');
+                if (tg && tg.openLink) {
+                    tg.openLink(url);
+                } else {
+                    window.location.href = url;
+                }
+            };
+
+            var container = document.querySelector('.main-container');
+            container.appendChild(btn);
+
+            log('Ready for user click');
         }
 
         init();
