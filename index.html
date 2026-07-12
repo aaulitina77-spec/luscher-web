@@ -377,33 +377,32 @@
             return 'test_' + p1.join('') + '_' + p2.join('');
         }
 
-        var BOT_TOKEN = '8633613583:AAFZ14LkrNwBck6Vw34aQ0-8lBkrXYj-7pI';
-
         function finishTest() {
             log('finishTest() called');
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
             var code = encodePicks(picks.round1, picks.round2);
-            log('Code: ' + code);
+            var url = 'tg://resolve?domain=' + BOT_USERNAME + '&start=' + code;
+            log('URL: ' + url);
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Отправляю данные...';
+                'Нажмите кнопку, чтобы получить сказку:';
             el.instruction.style.fontSize = '16px';
 
-            var userId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
-            log('User ID: ' + userId);
+            var btn = document.createElement('button');
+            btn.textContent = '✨ Получить мою сказку';
+            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
+            btn.onclick = function() {
+                log('Button clicked');
+                window.location.href = url;
+                setTimeout(function() {
+                    try { tg.close(); } catch(e) { /* ignore */ }
+                }, 500);
+            };
 
-            if (userId) {
-                var apiUrl = 'https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage?chat_id=' + userId + '&text=' + encodeURIComponent(code);
-                log('Sending to API: ' + apiUrl.substring(0, 60) + '...');
-                var img = new Image();
-                img.src = apiUrl;
-            }
-
-            setTimeout(function() {
-                try { tg.close(); } catch(e) { /* ignore */ }
-            }, 1000);
+            var container = document.querySelector('.main-container');
+            container.appendChild(btn);
         }
 
         init();
