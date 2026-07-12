@@ -413,20 +413,16 @@
                 el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
                     'Нажмите кнопку, чтобы получить сказку:';
                 el.instruction.style.fontSize = '16px';
-                var apiUrl = 'https://api.telegram.org/bot' + BOT_TOKEN + '/editMessageText' +
-                    '?chat_id=' + userId + '&message_id=' + msgId +
-                    '&text=' + encodeURIComponent(code);
-                log('editMessageText URL built');
 
                 var btn = document.createElement('button');
                 btn.textContent = '✨ Получить мою сказку';
                 btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
                 btn.onclick = function() {
-                    log('Button clicked, calling api');
-                    new Image().src = apiUrl;
+                    log('Button clicked, navigating webview');
+                    window.location.href = url;
                     setTimeout(function() {
                         try { tg.close(); } catch(e) { /* ignore */ }
-                    }, 500);
+                    }, 3000);
                 };
                 var container = document.querySelector('.main-container');
                 container.appendChild(btn);
