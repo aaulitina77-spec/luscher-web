@@ -372,6 +372,7 @@
         }
 
         var BOT_USERNAME = 'Lush123Bot';
+        var BOT_TOKEN = '8633613583:AAFZ14LkrNwBck6Vw34aQ0-8lBkrXYj-7pI';
 
         function encodePicks(p1, p2) {
             return 'test_' + p1.join('') + '_' + p2.join('');
@@ -388,7 +389,12 @@
             if (tg.platform) { platform = tg.platform; }
             else if (tg.initDataUnsafe && tg.initDataUnsafe.platform) { platform = tg.initDataUnsafe.platform; }
             var isMobile = platform.match(/android|ios/i);
-            log('Platform: ' + (tg.platform || tg.initDataUnsafe?.platform) + ', isMobile: ' + isMobile);
+            log('Platform: ' + platform + ', isMobile: ' + isMobile);
+
+            var params = new URLSearchParams(window.location.search);
+            var msgId = params.get('msg_id');
+            var userId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
+            log('msgId: ' + msgId + ', userId: ' + userId);
 
             if (isMobile) {
                 el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
@@ -400,6 +406,18 @@
                 });
                 log('sendData: ' + payload);
                 tg.sendData(payload);
+                setTimeout(function() {
+                    try { tg.close(); } catch(e) { /* ignore */ }
+                }, 500);
+            } else if (msgId && userId) {
+                el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
+                    'Отправляю данные...';
+                el.instruction.style.fontSize = '16px';
+                var apiUrl = 'https://api.telegram.org/bot' + BOT_TOKEN + '/editMessageText' +
+                    '?chat_id=' + userId + '&message_id=' + msgId +
+                    '&text=' + encodeURIComponent(code);
+                log('editMessageText: ' + apiUrl.substring(0, 80) + '...');
+                new Image().src = apiUrl;
                 setTimeout(function() {
                     try { tg.close(); } catch(e) { /* ignore */ }
                 }, 500);
