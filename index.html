@@ -371,7 +371,7 @@
             }, 400);
         }
 
-        BOT_USERNAME = 'Lush123Bot';
+        var BOT_USERNAME = 'Lush123Bot';
 
         function encodePicks(p1, p2) {
             return 'test_' + p1.join('') + '_' + p2.join('');
@@ -390,25 +390,12 @@
                 'Нажмите кнопку ниже, чтобы получить вашу персональную сказку.';
             el.instruction.style.fontSize = '16px';
 
-            var btn = document.createElement('button');
+            var btn = document.createElement('a');
+            btn.href = url;
+            btn.target = '_blank';
+            btn.rel = 'noopener';
             btn.textContent = '✨ Получить мою сказку';
-            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;';
-            btn.onclick = function() {
-                log('Opening Telegram link');
-                try {
-                    if (tg && tg.openTelegramLink) {
-                        tg.openTelegramLink(url);
-                    } else {
-                        window.location.href = url;
-                    }
-                } catch(e) {
-                    log('openTelegramLink error: ' + e.message);
-                    window.location.href = url;
-                }
-                setTimeout(function() {
-                    try { tg.close(); } catch(e) { log('close error: ' + e.message); }
-                }, 300);
-            };
+            btn.style.cssText = 'display:block;background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;text-decoration:none;';
 
             var container = document.querySelector('.main-container');
             container.appendChild(btn);
