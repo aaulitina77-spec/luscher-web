@@ -382,20 +382,27 @@
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            var payload = JSON.stringify({ pick1: picks.round1, pick2: picks.round2 });
-            log('Sending via sendData');
+            var code = encodePicks(picks.round1, picks.round2);
+            var url = 'tg://resolve?domain=' + BOT_USERNAME + '&start=' + code;
+            log('URL: ' + url);
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Отправляю данные...';
+                'Нажмите кнопку, чтобы получить сказку:';
             el.instruction.style.fontSize = '16px';
 
-            if (tg) {
-                tg.sendData(payload);
-            }
+            var btn = document.createElement('button');
+            btn.textContent = '✨ Получить мою сказку';
+            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
+            btn.onclick = function() {
+                log('Opening via tg://');
+                window.location.href = url;
+                setTimeout(function() {
+                    try { tg.close(); } catch(e) { /* ignore */ }
+                }, 500);
+            };
 
-            setTimeout(function() {
-                try { tg.close(); } catch(e) { /* ignore */ }
-            }, 300);
+            var container = document.querySelector('.main-container');
+            container.appendChild(btn);
         }
 
         init();
