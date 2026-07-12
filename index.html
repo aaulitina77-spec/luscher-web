@@ -383,7 +383,8 @@
             el.loader.style.display = 'none';
 
             var payload = JSON.stringify({ pick1: picks.round1, pick2: picks.round2 });
-            log('Sending data via sendData');
+            var code = encodePicks(picks.round1, picks.round2);
+            var fallbackUrl = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
                 'Отправляю данные боту...';
@@ -391,15 +392,21 @@
 
             if (tg) {
                 tg.sendData(payload);
+                log('sendData called');
+                setTimeout(function () {
+                    var btn = document.createElement('a');
+                    btn.href = fallbackUrl;
+                    btn.textContent = '✨ Получить мою сказку';
+                    btn.style.cssText = 'display:block;background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;text-decoration:none;';
+                    var container = document.querySelector('.main-container');
+                    container.appendChild(btn);
+                    el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
+                        'Если бот не ответил, нажмите кнопку ниже:';
+                    log('Showing fallback button');
+                }, 2000);
             } else {
-                window.location.href = 'https://t.me/' + BOT_USERNAME + '?start=' + encodePicks(picks.round1, picks.round2);
+                window.location.href = fallbackUrl;
             }
-
-            setTimeout(function () {
-                try { tg.close(); } catch(e) { /* ignore */ }
-            }, 500);
-
-            log('sendData called');
         }
 
         init();
