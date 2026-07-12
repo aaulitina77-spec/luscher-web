@@ -384,25 +384,45 @@
 
             var code = encodePicks(picks.round1, picks.round2);
             var url = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
-            log('URL: ' + url);
+            var platform = '';
+            if (tg.platform) { platform = tg.platform; }
+            else if (tg.initDataUnsafe && tg.initDataUnsafe.platform) { platform = tg.initDataUnsafe.platform; }
+            var isMobile = platform.match(/android|ios/i);
+            log('Platform: ' + (tg.platform || tg.initDataUnsafe?.platform) + ', isMobile: ' + isMobile);
 
-            el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Нажмите кнопку, чтобы получить сказку:';
-            el.instruction.style.fontSize = '16px';
-
-            var btn = document.createElement('button');
-            btn.textContent = '✨ Получить мою сказку';
-            btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
-            btn.onclick = function() {
-                log('Button clicked');
-                tg.openLink(url);
+            if (isMobile) {
+                el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
+                    'Отправляю данные...';
+                el.instruction.style.fontSize = '16px';
+                var payload = JSON.stringify({
+                    pick1: picks.round1,
+                    pick2: picks.round2
+                });
+                log('sendData: ' + payload);
+                tg.sendData(payload);
                 setTimeout(function() {
                     try { tg.close(); } catch(e) { /* ignore */ }
                 }, 500);
-            };
+            } else {
+                el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
+                    'Нажмите кнопку, чтобы получить сказку. ' +
+                    'Браузер откроется на секунду и сразу вернёт вас в Telegram.';
+                el.instruction.style.fontSize = '16px';
 
-            var container = document.querySelector('.main-container');
-            container.appendChild(btn);
+                var btn = document.createElement('button');
+                btn.textContent = '✨ Получить мою сказку';
+                btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
+                btn.onclick = function() {
+                    log('Button clicked, opening link');
+                    tg.openLink(url);
+                    setTimeout(function() {
+                        try { tg.close(); } catch(e) { /* ignore */ }
+                    }, 500);
+                };
+
+                var container = document.querySelector('.main-container');
+                container.appendChild(btn);
+            }
         }
 
         init();
