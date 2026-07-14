@@ -401,12 +401,16 @@
                 log('Button clicked');
                 if (isMobile) {
                     tg.openLink(url);
+                    setTimeout(function() {
+                        try { tg.close(); } catch(e) { /* ignore */ }
+                    }, 500);
                 } else {
-                    window.location.href = url;
+                    var tgUrl = 'tg://resolve?domain=' + BOT_USERNAME + '&start=' + code;
+                    window.location.href = tgUrl;
+                    setTimeout(function() {
+                        try { tg.close(); } catch(e) { /* ignore */ }
+                    }, 1000);
                 }
-                setTimeout(function() {
-                    try { tg.close(); } catch(e) { /* ignore */ }
-                }, isMobile ? 500 : 3000);
             };
 
             var container = document.querySelector('.main-container');
