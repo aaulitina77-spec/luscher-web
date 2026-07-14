@@ -406,7 +406,7 @@
                 }
                 setTimeout(function() {
                     try { tg.close(); } catch(e) { /* ignore */ }
-                }, 3000);
+                }, isMobile ? 500 : 3000);
             };
 
             var container = document.querySelector('.main-container');
