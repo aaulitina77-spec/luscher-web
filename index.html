@@ -405,11 +405,10 @@
                         try { tg.close(); } catch(e) { /* ignore */ }
                     }, 500);
                 } else {
-                    var tgUrl = 'tg://resolve?domain=' + BOT_USERNAME + '&start=' + code;
-                    window.location.href = tgUrl;
+                    window.location.href = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
                     setTimeout(function() {
                         try { tg.close(); } catch(e) { /* ignore */ }
-                    }, 1000);
+                    }, 3000);
                 }
             };
 
