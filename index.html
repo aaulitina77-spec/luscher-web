@@ -371,10 +371,8 @@
             }, 400);
         }
 
-        var BOT_USERNAME = 'Lush123Bot';
-
         function encodePicks(p1, p2) {
-            return 'test_' + p1.join('') + '_' + p2.join('');
+            return JSON.stringify({pick1: p1, pick2: p2});
         }
 
         function finishTest() {
@@ -382,13 +380,8 @@
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            var code = encodePicks(picks.round1, picks.round2);
-            var url = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
-            var platform = '';
-            if (tg.platform) { platform = tg.platform; }
-            else if (tg.initDataUnsafe && tg.initDataUnsafe.platform) { platform = tg.initDataUnsafe.platform; }
-            var isMobile = platform.match(/android|ios/i);
-            log('Platform: ' + platform + ', isMobile: ' + isMobile);
+            var data = encodePicks(picks.round1, picks.round2);
+            log('Data to send: ' + data);
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
                 'Нажмите кнопку, чтобы получить сказку:';
@@ -398,17 +391,17 @@
             btn.textContent = '✨ Получить мою сказку';
             btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
             btn.onclick = function() {
-                log('Button clicked');
-                if (isMobile) {
-                    tg.openLink(url);
-                    setTimeout(function() {
-                        try { tg.close(); } catch(e) { /* ignore */ }
-                    }, 500);
-                } else {
-                    window.location.href = 'https://t.me/' + BOT_USERNAME + '?start=' + code;
-                    setTimeout(function() {
-                        try { tg.close(); } catch(e) { /* ignore */ }
-                    }, 3000);
+                log('Button clicked, sending data');
+                try {
+                    tg.sendData(data);
+                    log('sendData success');
+                    el.instruction.innerHTML = '✅ <b>Данные отправлены!</b><br><br>' +
+                        'Закройте окно и ждите сказку в чате.';
+                    btn.style.display = 'none';
+                } catch(e) {
+                    log('sendData failed: ' + e);
+                    el.instruction.innerHTML = '❌ <b>Ошибка отправки.</b><br><br>' +
+                        'Попробуйте закрыть и открыть тест снова.';
                 }
             };
 
