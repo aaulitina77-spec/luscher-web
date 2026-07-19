@@ -371,25 +371,14 @@
             }, 400);
         }
 
+        var BOT_USERNAME = 'Psyhoskazka_bot';
+
         function encodePicks(p1, p2) {
-            return JSON.stringify({pick1: p1, pick2: p2});
+            return 'test_' + p1.join('') + '_' + p2.join('');
         }
 
         var pendingData = null;
         var dataSent = false;
-
-        function sendDataToBot() {
-            if (dataSent || !pendingData) return false;
-            try {
-                tg.sendData(pendingData);
-                dataSent = true;
-                log('sendData OK');
-                return true;
-            } catch(e) {
-                log('sendData ERROR: ' + e);
-                return false;
-            }
-        }
 
         function finishTest() {
             log('finishTest() called');
@@ -406,17 +395,23 @@
             btn.textContent = '✨ Получить мою сказку';
             btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
             btn.onclick = function() {
-                log('Button clicked');
+                if (dataSent) return;
                 btn.disabled = true;
                 btn.textContent = '⏳ Отправляю...';
-                var ok = sendDataToBot();
-                if (ok) {
+
+                var url = 'https://t.me/' + BOT_USERNAME + '?start=' + pendingData;
+
+                try {
+                    tg.sendData(pendingData);
+                    dataSent = true;
+                    log('sendData OK');
                     el.instruction.innerHTML = '✅ <b>Готово!</b><br>Закрываюсь...';
                     setTimeout(function() { tg.close(); }, 300);
-                } else {
-                    el.instruction.innerHTML = '❌ <b>Ошибка</b><br>Попробуйте ещё раз';
-                    btn.disabled = false;
-                    btn.textContent = '✨ Получить мою сказку';
+                } catch(e) {
+                    log('sendData FAILED, fallback to link: ' + e);
+                    dataSent = true;
+                    tg.openLink(url);
+                    setTimeout(function() { tg.close(); }, 500);
                 }
             };
 
