@@ -375,13 +375,27 @@
             return JSON.stringify({pick1: p1, pick2: p2});
         }
 
+        var pendingData = null;
+        var dataSent = false;
+
+        function sendDataToBot() {
+            if (dataSent || !pendingData) return;
+            try {
+                tg.sendData(pendingData);
+                dataSent = true;
+                log('sendData success');
+            } catch(e) {
+                log('sendData failed: ' + e);
+            }
+        }
+
         function finishTest() {
             log('finishTest() called');
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            var data = encodePicks(picks.round1, picks.round2);
-            log('Data to send: ' + data);
+            pendingData = encodePicks(picks.round1, picks.round2);
+            log('Data to send: ' + pendingData);
 
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
                 'Нажмите кнопку, чтобы получить сказку:';
@@ -391,23 +405,23 @@
             btn.textContent = '✨ Получить мою сказку';
             btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
             btn.onclick = function() {
-                log('Button clicked, sending data');
-                try {
-                    tg.sendData(data);
-                    log('sendData success');
-                    el.instruction.innerHTML = '✅ <b>Данные отправлены!</b><br><br>' +
-                        'Закройте окно и ждите сказку в чате.';
-                    btn.style.display = 'none';
-                } catch(e) {
-                    log('sendData failed: ' + e);
-                    el.instruction.innerHTML = '❌ <b>Ошибка отправки.</b><br><br>' +
-                        'Попробуйте закрыть и открыть тест снова.';
-                }
+                log('Button clicked, sending data and closing');
+                sendDataToBot();
+                el.instruction.innerHTML = '✅ <b>Данные отправлены!</b><br><br>' +
+                    'Закройте окно и ждите сказку в чате.';
+                btn.style.display = 'none';
+                setTimeout(function() {
+                    try { tg.close(); } catch(e) { log('close failed: ' + e); }
+                }, 500);
             };
 
             var container = document.querySelector('.main-container');
             container.appendChild(btn);
         }
+
+        window.addEventListener('beforeunload', function() {
+            sendDataToBot();
+        });
 
         init();
 
