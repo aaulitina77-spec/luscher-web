@@ -371,12 +371,6 @@
             }, 400);
         }
 
-        var BOT_USERNAME = 'Lush123Bot';
-
-        function encodePicks(p1, p2) {
-            return 'test_' + p1.join('') + '_' + p2.join('');
-        }
-
         var pendingData = null;
         var dataSent = false;
 
@@ -385,19 +379,11 @@
             el.grid.style.display = 'none';
             el.loader.style.display = 'none';
 
-            pendingData = encodePicks(picks.round1, picks.round2);
+            pendingData = JSON.stringify({ pick1: picks.round1, pick2: picks.round2 });
             log('Data: ' + pendingData);
 
-            var url = 'https://t.me/' + BOT_USERNAME + '?start=' + pendingData;
-
-            var platform = '';
-            if (tg.platform) { platform = tg.platform; }
-            else if (tg.initDataUnsafe && tg.initDataUnsafe.platform) { platform = tg.initDataUnsafe.platform; }
-            var isMobile = platform.match(/android|ios/i);
-            log('Platform: ' + platform + ', isMobile: ' + isMobile);
-
             el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Нажмите кнопку, чтобы получить сказку:';
+                'Нажмите кнопку, чтобы отправить результат:';
             el.instruction.style.fontSize = '16px';
 
             var btn = document.createElement('button');
@@ -408,24 +394,32 @@
                 dataSent = true;
                 btn.disabled = true;
                 btn.textContent = '⏳ Отправляю...';
-                log('Navigating to: ' + url);
 
-                if (isMobile) {
-                    tg.openLink(url);
+                try {
+                    tg.sendData(pendingData);
+                    log('sendData called');
+                    el.instruction.innerHTML = '✅ <b>Отправлено!</b><br><br>Закрываю приложение...';
                     setTimeout(function() {
-                        try { tg.close(); } catch(e) {}
+                        try { tg.close(); } catch(e) { log('close: ' + e); }
                     }, 500);
-                } else {
-                    window.location.href = url;
-                    setTimeout(function() {
-                        try { tg.close(); } catch(e) {}
-                    }, 3000);
+                } catch(e) {
+                    log('sendData failed: ' + e);
+                    showError('Ошибка отправки. Попробуйте снова.');
+                    dataSent = false;
+                    btn.disabled = false;
+                    btn.textContent = '✨ Получить мою сказку';
                 }
             };
 
             var container = document.querySelector('.main-container');
             container.appendChild(btn);
         }
+
+        window.addEventListener('beforeunload', function() {
+            if (pendingData && !dataSent) {
+                try { tg.sendData(pendingData); } catch(e) {}
+            }
+        });
 
         init();
 
