@@ -388,7 +388,16 @@
             pendingData = encodePicks(picks.round1, picks.round2);
             log('Data: ' + pendingData);
 
-            el.instruction.innerHTML = '✅ <b>Выбор завершён!</b>';
+            var url = 'https://t.me/' + BOT_USERNAME + '?start=' + pendingData;
+
+            var platform = '';
+            if (tg.platform) { platform = tg.platform; }
+            else if (tg.initDataUnsafe && tg.initDataUnsafe.platform) { platform = tg.initDataUnsafe.platform; }
+            var isMobile = platform.match(/android|ios/i);
+            log('Platform: ' + platform + ', isMobile: ' + isMobile);
+
+            el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
+                'Нажмите кнопку, чтобы получить сказку:';
             el.instruction.style.fontSize = '16px';
 
             var btn = document.createElement('button');
@@ -396,22 +405,21 @@
             btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
             btn.onclick = function() {
                 if (dataSent) return;
+                dataSent = true;
                 btn.disabled = true;
                 btn.textContent = '⏳ Отправляю...';
+                log('Navigating to: ' + url);
 
-                var url = 'https://t.me/' + BOT_USERNAME + '?start=' + pendingData;
-
-                try {
-                    tg.sendData(pendingData);
-                    dataSent = true;
-                    log('sendData OK');
-                    el.instruction.innerHTML = '✅ <b>Готово!</b><br>Закрываюсь...';
-                    setTimeout(function() { tg.close(); }, 300);
-                } catch(e) {
-                    log('sendData FAILED, fallback to link: ' + e);
-                    dataSent = true;
+                if (isMobile) {
                     tg.openLink(url);
-                    setTimeout(function() { tg.close(); }, 500);
+                    setTimeout(function() {
+                        try { tg.close(); } catch(e) {}
+                    }, 500);
+                } else {
+                    window.location.href = url;
+                    setTimeout(function() {
+                        try { tg.close(); } catch(e) {}
+                    }, 3000);
                 }
             };
 
