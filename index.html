@@ -379,13 +379,15 @@
         var dataSent = false;
 
         function sendDataToBot() {
-            if (dataSent || !pendingData) return;
+            if (dataSent || !pendingData) return false;
             try {
                 tg.sendData(pendingData);
                 dataSent = true;
-                log('sendData success');
+                log('sendData OK');
+                return true;
             } catch(e) {
-                log('sendData failed: ' + e);
+                log('sendData ERROR: ' + e);
+                return false;
             }
         }
 
@@ -395,33 +397,32 @@
             el.loader.style.display = 'none';
 
             pendingData = encodePicks(picks.round1, picks.round2);
-            log('Data to send: ' + pendingData);
+            log('Data: ' + pendingData);
 
-            el.instruction.innerHTML = '✅ <b>Выбор завершён!</b><br><br>' +
-                'Нажмите кнопку, чтобы получить сказку:';
+            el.instruction.innerHTML = '✅ <b>Выбор завершён!</b>';
             el.instruction.style.fontSize = '16px';
 
             var btn = document.createElement('button');
             btn.textContent = '✨ Получить мою сказку';
             btn.style.cssText = 'background:var(--primary);color:#fff;border:none;padding:14px 28px;border-radius:var(--radius);font-size:17px;font-weight:600;cursor:pointer;margin-top:16px;width:100%;text-align:center;';
             btn.onclick = function() {
-                log('Button clicked, sending data and closing');
-                sendDataToBot();
-                el.instruction.innerHTML = '✅ <b>Данные отправлены!</b><br><br>' +
-                    'Закройте окно и ждите сказку в чате.';
-                btn.style.display = 'none';
-                setTimeout(function() {
-                    try { tg.close(); } catch(e) { log('close failed: ' + e); }
-                }, 500);
+                log('Button clicked');
+                btn.disabled = true;
+                btn.textContent = '⏳ Отправляю...';
+                var ok = sendDataToBot();
+                if (ok) {
+                    el.instruction.innerHTML = '✅ <b>Готово!</b><br>Закрываюсь...';
+                    setTimeout(function() { tg.close(); }, 300);
+                } else {
+                    el.instruction.innerHTML = '❌ <b>Ошибка</b><br>Попробуйте ещё раз';
+                    btn.disabled = false;
+                    btn.textContent = '✨ Получить мою сказку';
+                }
             };
 
             var container = document.querySelector('.main-container');
             container.appendChild(btn);
         }
-
-        window.addEventListener('beforeunload', function() {
-            sendDataToBot();
-        });
 
         init();
 
